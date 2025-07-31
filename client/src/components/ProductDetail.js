@@ -1,39 +1,28 @@
+// src/components/ProductDetail.js
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-// import './ProductDetail.css';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getProduct } from '../api';
 
-function ProductDetail({ productId, back }) {
+export default function ProductDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    axios.get(`http://localhost:5000/api/products/${productId}`)
-      .then(res => setProduct(res.data.item))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, [productId]);
+    getProduct(id).then(setProduct);
+  }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (!product) return <p>Product not found.</p>;
-
+  if (!product) return <div>Loading...</div>;
   return (
-    <article className="detail-card">
-      <button className="back-btn" onClick={back}>← Back to list</button>
-
-      <div className="detail-grid">
-        {/* <img src={product.imageUrl || 'https://via.placeholder.com/300'} alt={product.name} /> */}
-        <div className="info">
-          <h2>{product.name}</h2>
-          <p className="price">${product.retail_price.toFixed(2)}</p>
-          <p><strong>Brand:</strong> {product.brand}</p>
-          <p><strong>Department:</strong> {product.department}</p>
-          <p><strong>Description:</strong></p>
-          <p>{product.description || 'No description available.'}</p>
-        </div>
-      </div>
-    </article>
+    <div style={{ border: '1px solid #aaa', padding: '1em', marginTop: '2em' }}>
+      <button onClick={() => navigate(-1)}>Back</button>
+      <h3>{product.name}</h3>
+      <div><b>Brand:</b> {product.brand}</div>
+      <div><b>Price:</b> ₹{product.retail_price}</div>
+      <div><b>Cost:</b> ₹{product.cost}</div>
+      <div><b>Department:</b> {product.department?.name}</div>
+      <div><b>SKU:</b> {product.sku}</div>
+      <div><b>Category:</b> {product.category}</div>
+    </div>
   );
 }
-
-export default ProductDetail;

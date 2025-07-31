@@ -1,29 +1,27 @@
-import React, { useState } from 'react';
+// src/App.js
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import DepartmentList from './components/DepartmentList';
 import ProductList from './components/ProductList';
 import ProductDetail from './components/ProductDetail';
-import './App.css';
-
-function App() {
-  const [selectedId, setSelectedId] = useState(null);
-
+import DepartmentHeader from './components/DepartmentHeader';
+import './App.css'; // Assuming you have some global styles
+export default function App() {
   return (
-    <div className="app">
-      <header>
-        <h1>My E-Commerce Store</h1>
-      </header>
-
-      <main>
-        {selectedId
-          ? <ProductDetail productId={selectedId} back={() => setSelectedId(null)} />
-          : <ProductList selectProduct={id => setSelectedId(id)} />
-        }
-      </main>
-
-      <footer>
-        © {new Date().getFullYear()} My Store
-      </footer>
-    </div>
+    <BrowserRouter>
+      <h1>E-commerce Departments</h1>
+      <DepartmentList />
+      <Routes>
+        <Route path="/" element={<Navigate to="/departments" />} />
+        <Route path="/departments" element={<ProductList />} />
+        <Route path="/departments/:deptId" element={
+          <>
+            <DepartmentHeader />
+            <ProductList />
+          </>
+        } />
+        <Route path="/products/:id" element={<ProductDetail />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

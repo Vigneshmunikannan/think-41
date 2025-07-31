@@ -1,96 +1,52 @@
-// src/ProductList.js
+// src/components/ProductList.js
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-// import './ProductList.css';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { getProducts } from '../api';
 
-function ProductList({ selectProduct }) {
-  const [products,   setProducts]   = useState([]);
-  const [departments,setDepts]      = useState([]);
-  const [page,       setPage]      = useState(1);
-  const [totalPages, setTotal]     = useState(1);
-  const [filterDept, setFilterDept]= useState('all');
+export default function ProductList() {
+  const { deptId } = useParams();
+  const [products, setProducts] = useState([]);
+  const [pageData, setPageData] = useState({page: 1, totalPages: 1, totalItems: 0});
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // fetch departments once
+  // Read ?page= query
+  const qp = new URLSearchParams(location.search);
+  const pageQ = parseInt(qp.get('page') || '1', 10);
+
   useEffect(() => {
-    axios.get('http://localhost:5000/api/departments')
-      .then(res => setDepts(res.data))
-      .catch(console.error);
-  }, []);
+    const params = { page: pageQ, limit: 10 };
+    if (deptId) params.departmentId = deptId;
+    getProducts(params).then(data => {
+      setProducts(data.items);
+      setPageData({page: data.page, totalPages: data.totalPages, totalItems: data.totalItems});
+    });
+  }, [deptId, pageQ]);
 
-  // fetch paginated products whenever page changes
-  useEffect(() => {
-    axios.get(`http://localhost:5000/api/products?page=${page}&limit=12`)
-      .then(res => {
-        setProducts(res.data.items);
-        setTotal(res.data.totalPages);
-      })
-      .catch(console.error);
-  }, [page]);
-
-  // apply frontend filter
-  const visible = products.filter(p => {
-    if (filterDept === 'all') return true;
-    return p.department && p.department._id === filterDept;
-  });
+  const gotoPage = (n) => {
+    navigate(`${location.pathname}?page=${n}`);
+  };
 
   return (
-    <section>
-      <h2>Products</h2>
-
-      {/* Department filter */}
-      <label>
-        Filter by:
-        <select
-          value={filterDept}
-          onChange={e => {
-            setFilterDept(e.target.value);
-            setPage(1);  // reset to first page on filter change
-          }}
-        >
-          <option value="all">All Departments</option>
-          {departments.map(d => (
-            <option key={d._id} value={d._id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {/* Product grid */}
-      <div className="grid">
-        {visible.map(p => (
-          <div
-            key={p._id}
-            className="card"
-            onClick={() => selectProduct(p._id)}
-          >
-            <h3>{p.name}</h3>
-            <p className="price">${p.retail_price.toFixed(2)}</p>
-            <small>{p.department?.name || 'No Dept'}</small>
-          </div>
+    <div>
+      <ul>
+        {products.length === 0 && <li>No products found.</li>}
+        {products.map(prod => (
+          <li key={prod._id || prod.id} onClick={() => navigate(`/products/${prod._id || prod.id}`)} style={{cursor: "pointer"}}>
+            {prod.name} - ₹{prod.retail_price} ({prod.department?.name})
+          </li>
         ))}
-
-        {visible.length === 0 && (
-          <p>No products in this department.</p>
+      </ul>
+      <div>
+        {pageData.page > 1 && (
+          <button onClick={() => gotoPage(pageData.page - 1)}>Prev</button>
+        )}
+        <span> Page {pageData.page} of {pageData.totalPages} </span>
+        {pageData.page < pageData.totalPages && (
+          <button onClick={() => gotoPage(pageData.page + 1)}>Next</button>
         )}
       </div>
-
-      {/* Pagination controls */}
-      <div className="pagination">
-        <button
-          onClick={() => setPage(page - 1)}
-          disabled={page <= 1}
-        >‹ Prev</button>
-
-        <span>Page {page} of {totalPages}</span>
-
-        <button
-          onClick={() => setPage(page + 1)}
-          disabled={page >= totalPages}
-        >Next ›</button>
-      </div>
-    </section>
+      <div>{pageData.totalItems} items found.</div>
+    </div>
   );
 }
-
-export default ProductList;
