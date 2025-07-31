@@ -7,7 +7,7 @@ const productSchema = new mongoose.Schema({
   name: String,
   brand: String,
   retail_price: Number,
-  department: String,
+  department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
   sku: String,
   distribution_center_id: Number
 });

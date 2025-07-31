@@ -1,10 +1,10 @@
 // routes/products.js
-const express = require('express');
+const express  = require('express');
 const mongoose = require('mongoose');
 const Product  = require('../models/Product');
 
 const router = express.Router();
-
+require('../models/Department');
 // GET /api/products
 // Optional query params: ?page=1&limit=20
 router.get('/', async (req, res) => {
@@ -18,6 +18,7 @@ router.get('/', async (req, res) => {
       Product.find()
              .skip(skip)
              .limit(limit)
+             .populate('department', 'name')  // ← populate only the name
              .lean()
     ]);
 
@@ -38,7 +39,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
-  // 1) Check for valid MongoDB ObjectId
+  // 1) Validate ObjectId
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res
       .status(400)
@@ -46,15 +47,19 @@ router.get('/:id', async (req, res) => {
   }
 
   try {
-    // 2) Lookup by _id
-    const product = await Product.findById(id).lean();
+    // 2) Find & populate
+    const product = await Product
+      .findById(id)
+      .populate('department', 'name')
+      .lean();
+
     if (!product) {
       return res
         .status(404)
         .json({ success: false, message: 'Product not found' });
     }
 
-    // 3) Return it
+    // 3) Send back
     res.json({ success: true, item: product });
   } catch (err) {
     console.error(err);
