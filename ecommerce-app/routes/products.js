@@ -5,35 +5,44 @@ const Product  = require('../models/Product');
 
 const router = express.Router();
 require('../models/Department');
-// GET /api/products
-// Optional query params: ?page=1&limit=20
+// GET /api/products?departmentId=XXX&page=1&limit=20
 router.get('/', async (req, res) => {
   try {
-    const page  = Math.max(1, parseInt(req.query.page  ) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit ) || 20);
+    const page  = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 20);
     const skip  = (page - 1) * limit;
 
+    // Build filter object
+    const filter = {};
+    if (req.query.departmentId) {
+      filter.department = req.query.departmentId; // must be ObjectId
+    }
+    // You can add more filters here
+
+    // Get filtered total and paginated products
     const [ total, products ] = await Promise.all([
-      Product.countDocuments(),
-      Product.find()
-             .skip(skip)
-             .limit(limit)
-             .populate('department', 'name')  // ← populate only the name
-             .lean()
+      Product.countDocuments(filter),
+      Product.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .populate('department', 'name')
+        .lean()
     ]);
 
     res.json({
       success: true,
       page,
+      limit,
       totalPages: Math.ceil(total / limit),
       totalItems: total,
-      items: products
+      items: products,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
 
 // GET /api/products/:id
 router.get('/:id', async (req, res) => {
